@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { GET } from "./api/route";
 import Masonry from "react-masonry-css";
+import { ImageZoom } from "./components/ImageZoom";
 
 interface Photo {
   id: string;
@@ -17,7 +18,7 @@ export default function Page() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [page, setPage] = useState(2); // текущая страница
   const [isLoading, setIsLoading] = useState(false);
-  const [hoveredPhotoId, setHoveredPhotoId] = useState<string | null>(null);
+  // const [hoveredPhotoId, setHoveredPhotoId] = useState<string | null>(null);
 
   // загружаем первую страницу
   useEffect(() => {
@@ -50,23 +51,7 @@ export default function Page() {
           columnClassName="flex flex-col gap-5"
         >
           {photos.map((photo) => (
-            <div
-              key={photo.id}
-              onMouseOver={() => setHoveredPhotoId(photo.id)}
-              onMouseLeave={() => setHoveredPhotoId(null)}
-              className=" hover:scale-120 transition-transform duration-400 cursor-pointer hover:border-1 border-gray-200 hover:shadow-xl rounded-md overflow-hidden  text-center hover:p-2 bg-white"
-            >
-              <Image
-                src={photo.download_url}
-                alt={photo.author || "Photo"}
-                width={300}
-                height={200}
-                className="w-full rounded-md "
-              ></Image>
-              {hoveredPhotoId === photo.id && (
-                <div>{photo.author}</div>
-              )}
-            </div>
+            <ImageZoom id={photo.id} url={photo.download_url} alt="Photo" author={photo.author || "Unknown"} />
           ))}
         </Masonry>
         <div className="flex justify-center flex-col items-center">
