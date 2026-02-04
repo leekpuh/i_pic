@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Masonry from "react-masonry-css";
 import { ImageZoom } from "./components/ImageZoom";
+var debounce = require("lodash.debounce");
 
 interface Photo {
   id: string;
@@ -18,15 +19,23 @@ export default function Page() {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [query, setQuery] = useState("");
-
+  const debouncedLoadMore = useMemo(
+    () =>
+      debounce((pageToLoad: number, currentQuery: string) => {
+        setPhotos([]);
+        loadMore(pageToLoad, currentQuery);
+      }, 1000),
+    [],
+  );
 
   useEffect(() => {
-    setPhotos([]); 
-    setPage(1); 
+    setPage(1);
     if (query !== "") {
-      loadMore(1, query); 
+      debouncedLoadMore(1, query);
     } else {
-      loadMore(1); 
+      setPhotos([])
+      debouncedLoadMore.cancel()
+      loadMore(1, "");
     }
   }, [query]);
 
@@ -35,6 +44,7 @@ export default function Page() {
     try {
       const response = await fetch(
         `/api?page=${pageToLoad}&query=${currentQuery}`,
+        { method: "GET" },
       );
       const data = await response.json();
       setPhotos((prev) => [...prev, ...data]);
@@ -54,8 +64,13 @@ export default function Page() {
           <input
             className=" rounded-md w-120 p-2 outline-none"
             placeholder="Поиск..."
-            value={query ?? ""}
+            value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter"){
+              debouncedLoadMore.cancel()
+              setPhotos([])
+              loadMore(1, query)
+            }}}
           />
           {query && (
             <button
