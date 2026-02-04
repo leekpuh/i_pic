@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Masonry from "react-masonry-css";
 import { ImageZoom } from "./components/ImageZoom";
-var debounce = require("lodash.debounce");
+import debounce from "lodash.debounce";
+import throttle from "lodash.throttle";
 
 interface Photo {
   id: string;
@@ -19,34 +20,25 @@ export default function Page() {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [query, setQuery] = useState("");
-  const debouncedLoadMore = useMemo(
+  const [inputValue, setInputValue] = useState("");
+
+  const debouncedSetQuery = useMemo(
     () =>
-      debounce((pageToLoad: number, currentQuery: string) => {
+      debounce((val: string) => {
+        setPage(1);
         setPhotos([]);
-        loadMore(pageToLoad, currentQuery);
+        setQuery(val);
       }, 1000),
-    [],
+    []
   );
 
-  useEffect(() => {
-    setPage(1);
-    if (query !== "") {
-      debouncedLoadMore(1, query);
-    } else {
-      setPhotos([])
-      debouncedLoadMore.cancel()
-      loadMore(1, "");
-    }
-  }, [query]);
-
   async function loadMore(pageToLoad = page, currentQuery = query) {
+    if (isLoading) return; 
+
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `/api?page=${pageToLoad}&query=${currentQuery}`,
-        { method: "GET" },
-      );
-      const data = await response.json();
+      const res = await fetch(`/api?page=${pageToLoad}&query=${currentQuery}`);
+      const data = await res.json();
       setPhotos((prev) => [...prev, ...data]);
       setPage(pageToLoad + 1);
     } catch (err) {
@@ -56,26 +48,74 @@ export default function Page() {
     }
   }
 
+  useEffect(() => {
+    const handleScroll = throttle(() => {
+      if (
+        window.innerHeight + window.scrollY >=
+          document.documentElement.scrollHeight - 200 &&
+        !isLoading
+      ) {
+        loadMore();
+      }
+    }, 1000);
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      handleScroll.cancel();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [isLoading, page, query]);
+
+
+  useEffect(() => {
+    setPage(1);
+    setPhotos([]);
+    loadMore(1, query);
+  }, [query]);
+
   return (
     <>
       <header className="border-b border-gray-300 bg-gray-200 pt-4 flex justify-between items-center px-5">
         <h1 className="text-3xl font-bold mb-4 mx-5">i-Pic</h1>
+
         <div className="flex items-center bg-white h-10 rounded-md mb-4 border-gray-300 border-2">
           <input
-            className=" rounded-md w-120 p-2 outline-none"
+            className="rounded-md w-120 p-2 outline-none"
             placeholder="Поиск..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter"){
-              debouncedLoadMore.cancel()
-              setPhotos([])
-              loadMore(1, query)
-            }}}
+            value={inputValue}
+            onChange={(e) => {
+              const val = e.target.value;
+              setInputValue(val);
+
+              if (val === "") {
+                debouncedSetQuery.cancel();
+                setQuery("");
+                setPhotos([]);
+                setPage(1);
+              } else {
+                debouncedSetQuery(val);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                debouncedSetQuery.cancel();
+                setQuery(inputValue);
+                setPage(1);
+                setPhotos([]);
+              }
+            }}
           />
-          {query && (
+
+          {inputValue && (
             <button
-              className="text-red-700 font-bold cursor-pointer px-2 py-1 rounded-full gap-2 mr-1 hover:bg-red-100/75 "
-              onClick={() => setQuery("")}
+              className="text-red-700 font-bold cursor-pointer px-2 py-1 rounded-full gap-2 mr-1 hover:bg-red-100/75"
+              onClick={() => {
+                setInputValue("");
+                setQuery("");
+                setPhotos([]);
+                setPage(1);
+              }}
             >
               ✕
             </button>
