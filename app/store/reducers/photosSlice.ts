@@ -3,9 +3,10 @@
 import { IPhotosState } from "@/app/models/IPhotosState";
 import { createSlice } from "@reduxjs/toolkit";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { photos as localPhotos } from "../../data/photos";
+// import { photos as localPhotos } from "../../data/photos";
 import { IPhoto } from "@/app/models/IPhoto";
 import { RootState } from "../../store/store";
+import { Console } from "console";
 
 const initialState: IPhotosState = {
   photos: [],
@@ -21,31 +22,16 @@ interface FetchParams {
 
 export const fetchPhotos = createAsyncThunk<IPhoto[], FetchParams,  { state: RootState }>(
   "photos/fetchPhotos",
-  async ({ page, query }, { getState }) => {
-    const pageSize = 20;
-
-    const state = getState();
-    const alreadyLoaded: IPhoto[] = state.photos.photos;
-    const alreadyIds = new Set(alreadyLoaded.map((p) => p.id));
-
-    const filtered = localPhotos.filter((p) =>
-      query ? p.desc.toLowerCase().includes(query.toLowerCase()) : true
-    );
-    const start = (page - 1) * pageSize;
-    const pageData = filtered.slice(start, start + pageSize);
-    const newData = pageData.filter((p) => !alreadyIds.has(p.id));
-
-    if (newData.length > 0) return newData;
-
-    try {
+  async ({ page, query }) => {
+   
       const res = await fetch(`/api?page=${page}&query=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error("Server not available");
+      console.log("RES", res)
       const data: IPhoto[] = await res.json();
-      return data.filter((p) => !alreadyIds.has(p.id));
-    } catch (err) {
-      console.warn("Server fetch failed, using local data", err);
-      return newData; // fallback на локальные данные
-    }
+      console.log("DATA", data)
+      return data;
+      
+
   }
 );
 

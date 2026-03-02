@@ -44,7 +44,9 @@ export default function Page() {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [isLoading, page, query]);
-console.log("query:",query)
+  ////
+  console.log("query:",query)
+  ////
   useEffect(() => {
     
     if (query !== "") {
@@ -67,7 +69,7 @@ console.log("query:",query)
             <ImageZoom
               key={photo.id}
               id={photo.id}
-              url={photo.urls?.regular}
+              url={photo.thumbnail_url}
               photo={photo}
             />
           ))}

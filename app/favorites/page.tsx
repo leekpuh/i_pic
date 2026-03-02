@@ -25,7 +25,7 @@ export default function Favorites() {
             <ImageZoom
               key={photo.id}
               id={photo.id}
-              url={photo.urls?.regular}
+              url={photo.thumbnail_url}
             
               photo={photo}
             />

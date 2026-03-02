@@ -1,5 +1,5 @@
 export interface IPhoto {
   id: string;
-  urls: { regular: string };
-  desc: string
+  thumbnail_url: string;
+  title: string
 }
