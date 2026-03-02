@@ -12,28 +12,28 @@ var throttle = require("lodash.throttle");
 var debounce = require("lodash.debounce");
 
 export default function Page() {
-
   const dispatch = useDispatch<AppDispatch>();
   const { photos, page, query, isLoading } = useSelector(
-    (state: RootState) => state.photos
+    (state: RootState) => state.photos,
   );
+
 
   const debouncedLoadMore = useMemo(
     () =>
       debounce((pageToLoad: number, currentQuery: string) => {
         dispatch(fetchPhotos({ page: pageToLoad, query: currentQuery }));
       }, 1000),
-    [dispatch]
+    [dispatch],
   );
 
- useEffect(() => {
+  useEffect(() => {
     const handleScroll = throttle(() => {
       if (
         window.innerHeight + window.scrollY >=
           document.documentElement.scrollHeight - 200 &&
         !isLoading
       ) {
-         dispatch(fetchPhotos({page, query}))
+        dispatch(fetchPhotos({ page, query }));
       }
     }, 1000);
 
@@ -44,21 +44,19 @@ export default function Page() {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [isLoading, page, query]);
-
+console.log("query:",query)
   useEffect(() => {
-    dispatch(resetPhotos());
+    
     if (query !== "") {
       debouncedLoadMore(1, query);
-    } else {
-      debouncedLoadMore.cancel()
-      dispatch(fetchPhotos({page: 1, query: ""}));
+    } else if (query === "" && photos.length === 0) {
+      debouncedLoadMore.cancel();
+      dispatch(fetchPhotos({ page: 1, query: "" }));
     }
   }, [query]);
 
   return (
     <>
-      
-
       <main className="flex flex-col bg-gray-100 py-5 mx-5">
         <Masonry
           breakpointCols={5}
@@ -70,7 +68,7 @@ export default function Page() {
               key={photo.id}
               id={photo.id}
               url={photo.urls?.regular}
-              author={photo.user?.name || "Unknown"}
+              photo={photo}
             />
           ))}
         </Masonry>
@@ -87,5 +85,5 @@ export default function Page() {
         </div>
       </main>
     </>
-  );
+  )
 }
